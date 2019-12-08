@@ -49,7 +49,6 @@ defmodule Day8 do
   def render(img, width) do
     Enum.chunk_every(img, width)
     |> Enum.map(&(pretty(&1) |> Enum.join()))
-    |> IO.inspect()
   end
 
   defp pretty(line), do: Enum.map(line, &if(&1 == 1, do: "█", else: " "))

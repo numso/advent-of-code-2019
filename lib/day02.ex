@@ -5,7 +5,7 @@ defmodule Day2 do
   """
   def part1(a \\ 12, b \\ 2) do
     [hd, _, _ | tl] = Parser.int_list("input2.txt", ",")
-    [hd, a, b | tl] |> run_program() |> List.first()
+    [hd, a, b | tl] |> run() |> List.first()
   end
 
   @doc """
@@ -18,30 +18,23 @@ defmodule Day2 do
   end
 
   @doc """
-  iex> Day2.run_program([1, 0, 0, 0, 99])
+  iex> Day2.run([1, 0, 0, 0, 99])
   [2, 0, 0, 0, 99]
 
-  iex> Day2.run_program([2, 3, 0, 3, 99])
+  iex> Day2.run([2, 3, 0, 3, 99])
   [2, 3, 0, 6, 99]
 
-  iex> Day2.run_program([2, 4, 4, 5, 99, 0])
+  iex> Day2.run([2, 4, 4, 5, 99, 0])
   [2, 4, 4, 5, 99, 9801]
 
-  iex> Day2.run_program([1, 1, 1, 4, 99, 5, 6, 0, 99])
+  iex> Day2.run([1, 1, 1, 4, 99, 5, 6, 0, 99])
   [30, 1, 1, 4, 2, 5, 6, 0, 99]
   """
-  def run_program(program, pointer \\ 0) do
-    run = fn count, fun ->
-      Enum.slice(program, pointer + 1, count)
-      |> Enum.map(&{&1, Enum.at(program, &1)})
-      |> fun.()
-      |> run_program(pointer + 1 + count)
-    end
+  def run(program) do
+    pid = spawn(IntCode, :start, [self(), program])
 
-    case Enum.at(program, pointer) do
-      1 -> run.(3, fn [{_, a}, {_, b}, {c, _}] -> List.replace_at(program, c, a + b) end)
-      2 -> run.(3, fn [{_, a}, {_, b}, {c, _}] -> List.replace_at(program, c, a * b) end)
-      99 -> program
+    receive do
+      {:finish_program, ^pid, program} -> program
     end
   end
 end
