@@ -1,13 +1,13 @@
 defmodule Day7 do
   @doc """
-  iex> Day7.part1()
-  {18812, [2,3,0,4,1]}
+  iex> Day7.part1() |> elem(0)
+  18812
   """
   def part1(), do: Parser.int_list("input7.txt", ",") |> simulate()
 
   @doc """
-  iex> Day7.part2()
-  {25534964, [6,9,8,7,5]}
+  iex> Day7.part2() |> elem(0)
+  25534964
   """
   def part2(), do: Parser.int_list("input7.txt", ",") |> simulate(5..9)
 
@@ -52,6 +52,6 @@ defmodule Day7 do
   defp cartesian_uniq([], phase), do: [Enum.reverse(phase)]
 
   defp cartesian_uniq(input, output) do
-    Enum.flat_map(input, fn i -> cartesian_uniq(Enum.filter(input, &(&1 != i)), [i | output]) end)
+    Enum.flat_map(input, &cartesian_uniq(input -- [&1], [&1 | output]))
   end
 end
