@@ -9,7 +9,7 @@ defmodule Day10 do
   iex> Day10.part2()
   1919
   """
-  def part2(), do: Parser.read("input10.txt") |> get_order()
+  def part2(), do: Parser.read("input10.txt") |> get_200th()
 
   @doc """
   iex> Day10Tests.test(0) |> Day10.most_visible()
@@ -37,37 +37,17 @@ defmodule Day10 do
   end
 
   @doc """
-  iex> Day10Tests.test(4) |> Day10.get_order()
+  iex> Day10Tests.test(4) |> Day10.get_200th()
   802
   """
-  def get_order(input) do
+  def get_200th(input) do
     asteroids = parse(input)
-    angles = find_most_visible(asteroids) |> elem(1) |> get_angles(asteroids)
-    keys = Map.keys(angles) |> Enum.sort() |> Enum.reverse()
-    {_, {x, y}} = make_list(false, angles, keys, 0, []) |> Enum.at(199)
+    {_, pos} = find_most_visible(asteroids)
+    {_, {x, y}} = get_angles(pos, asteroids) |> to_list |> Enum.at(199) |> List.first()
     x * 100 + y
   end
 
-  def make_list(true, _, _, _, rest), do: Enum.reverse(rest)
-
-  def make_list(is_empty, asteroids, keys, i, rest) do
-    key = Enum.at(keys, i)
-    next = Integer.mod(i + 1, length(keys))
-
-    case Map.get(asteroids, key, []) do
-      [] ->
-        make_list(is_empty, asteroids, keys, next, rest)
-
-      [hd | []] ->
-        new_asteroids = Map.delete(asteroids, key)
-        is_empty = Enum.empty?(new_asteroids)
-        make_list(is_empty, new_asteroids, keys, next, [hd | rest])
-
-      [hd | tl] ->
-        new_asteroids = Map.put(asteroids, key, tl)
-        make_list(is_empty, new_asteroids, keys, next, [hd | rest])
-    end
-  end
+  defp to_list(a), do: Enum.to_list(a) |> Enum.sort() |> Enum.reverse() |> Enum.map(&elem(&1, 1))
 
   defp dist(x, y, x1, y1), do: :math.sqrt(:math.pow(x - x1, 2) + :math.pow(y - y1, 2))
 
