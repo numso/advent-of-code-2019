@@ -9,16 +9,13 @@ defmodule IntCode do
     {inputs, outputs} =
       Enum.take(0..num_args, num_args)
       |> Enum.zip(modes)
-      |> Enum.map(fn {i, mode} ->
-        io = if i < num_in, do: :input, else: :output
-        {io, mode, Map.get(program, pointer + 1 + i, 0)}
-      end)
+      |> Enum.map(fn {i, mode} -> {i < num_in, mode, Map.get(program, pointer + 1 + i, 0)} end)
       |> Enum.map(fn
-        {:input, "0", num} -> Map.get(program, num, 0)
-        {:input, "1", num} -> num
-        {:input, "2", num} -> Map.get(program, rpointer + num, 0)
-        {:output, "0", num} -> num
-        {:output, "2", num} -> rpointer + num
+        {true, "0", num} -> Map.get(program, num, 0)
+        {true, "1", num} -> num
+        {true, "2", num} -> Map.get(program, rpointer + num, 0)
+        {false, "0", num} -> num
+        {false, "2", num} -> rpointer + num
       end)
       |> Enum.split(num_in)
 
@@ -75,13 +72,11 @@ defmodule IntCode do
   def instr(code), do: raise("Unknown Intcode #{code} in instr/2")
 
   def parse(num) do
-    [b, a | modes] =
-      Integer.to_string(num)
-      |> String.pad_leading(5, "0")
-      |> String.graphemes()
-      |> Enum.reverse()
-
-    {a <> b, modes}
+    Integer.to_string(num)
+    |> String.pad_leading(5, "0")
+    |> String.graphemes()
+    |> Enum.reverse()
+    |> (fn [b, a | modes] -> {a <> b, modes} end).()
   end
 
   defp from_list(list), do: Enum.with_index(list) |> Enum.into(%{}, fn {c, i} -> {i, c} end)
