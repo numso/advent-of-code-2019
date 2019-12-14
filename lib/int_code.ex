@@ -38,6 +38,8 @@ defmodule IntCode do
         run(pid, program, next, rpointer)
 
       :input ->
+        send(pid, {:request_input, self()})
+
         receive do
           {:input, num} -> run(pid, Map.put(program, List.first(outputs), num), next, rpointer)
         end
