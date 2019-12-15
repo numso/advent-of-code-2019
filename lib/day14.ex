@@ -1,61 +1,103 @@
 defmodule Day14 do
   @doc """
   iex> Day14.part1()
-  0
+  374457
   """
   def part1(), do: Parser.read("input14.txt") |> get_fuel()
 
   @doc """
-  iex> Day14Tests.test(0) |> Day14.get_fuel()
-  Day14Test.answer(0)
-
-  iex> Day14Tests.test(1) |> Day14.get_fuel()
-  Day14Test.answer(1)
-
-  iex> Day14Tests.test(2) |> Day14.get_fuel()
-  Day14Test.answer(2)
-
-  iex> Day14Tests.test(3) |> Day14.get_fuel()
-  Day14Test.answer(3)
-
-  iex> Day14Tests.test(4) |> Day14.get_fuel()
-  Day14Test.answer(4)
+  iex> Day14.part2()
+  3568888
   """
-  def get_fuel(input) do
-    pairs = parse(input)
-    get_reqs("FUEL", 1, pairs) |> Map.get("ORE")
+  def part2(), do: Parser.read("input14.txt") |> get_max_fuel()
+
+  @doc """
+  iex> Day14Tests.test(0) |> Day14.get_max_fuel()
+  Day14Tests.answer2(0)
+
+  iex> Day14Tests.test(1) |> Day14.get_max_fuel()
+  Day14Tests.answer2(1)
+
+  iex> Day14Tests.test(2) |> Day14.get_max_fuel()
+  Day14Tests.answer2(2)
+
+  iex> Day14Tests.test(3) |> Day14.get_max_fuel()
+  Day14Tests.answer2(3)
+
+  iex> Day14Tests.test(4) |> Day14.get_max_fuel()
+  Day14Tests.answer2(4)
+  """
+  def get_max_fuel(input) do
+    recipes = parse(input)
+    fun = fn i -> get_ore_needed(recipes, "FUEL", i) |> elem(0) <= 1_000_000_000_000 end
+    binary_search(fun, 0, 1_000_000_000_000)
   end
 
-  def get_reqs("ORE", count, _), do: %{"ORE" => count}
+  def binary_search(_, min, max) when min >= max, do: max
 
-  def get_reqs(chemical, count, pairs) do
-    {amount, reqs} = Map.get(pairs, chemical)
-    multiplier = ceil(count / amount)
+  def binary_search(fun, min, max) do
+    num = min + round((max - min) / 2)
 
-    Enum.reduce(reqs, %{}, fn {count, chemical}, acc ->
-      next = get_reqs(chemical, count * multiplier, pairs)
+    if fun.(num) do
+      binary_search(fun, num, max)
+    else
+      binary_search(fun, min, num - 1)
+    end
+  end
 
-      Enum.reduce(next, acc, fn {chemical, amount}, acc ->
-        Map.update(acc, chemical, amount, &(&1 + amount))
-      end)
-    end)
-    |> IO.inspect()
+  @doc """
+  iex> Day14Tests.test(0) |> Day14.get_fuel()
+  Day14Tests.answer(0)
+
+  iex> Day14Tests.test(1) |> Day14.get_fuel()
+  Day14Tests.answer(1)
+
+  iex> Day14Tests.test(2) |> Day14.get_fuel()
+  Day14Tests.answer(2)
+
+  iex> Day14Tests.test(3) |> Day14.get_fuel()
+  Day14Tests.answer(3)
+
+  iex> Day14Tests.test(4) |> Day14.get_fuel()
+  Day14Tests.answer(4)
+  """
+  def get_fuel(input), do: parse(input) |> get_ore_needed("FUEL", 1) |> elem(0)
+
+  def get_ore_needed(recipes, chemical, amount, inventory \\ %{})
+  def get_ore_needed(_, "ORE", amount, inventory), do: {amount, inventory}
+
+  def get_ore_needed(recipes, chemical, amount, inventory) do
+    case {Map.get(inventory, chemical, 0), amount} do
+      {num_owned, num_needed} when num_owned >= num_needed ->
+        {0, Map.put(inventory, chemical, num_owned - num_needed)}
+
+      {num_owned, num_needed} ->
+        {amount, reqs} = Map.get(recipes, chemical)
+        required_amount = num_needed - num_owned
+        num_batches = ceil(required_amount / amount)
+        inv = Map.put(inventory, chemical, num_batches * amount - required_amount)
+
+        Enum.reduce(reqs, {0, inv}, fn {count, chemical}, {ore, inv} ->
+          {ore2, inv2} = get_ore_needed(recipes, chemical, count * num_batches, inv)
+          {ore + ore2, inv2}
+        end)
+    end
   end
 
   def parse(input) do
-    parse_chemical = fn chunk ->
-      [count, chemical] = String.split(chunk, " ")
-      {String.to_integer(count), chemical}
-    end
-
     String.split(input, "\n")
     |> Enum.map(fn line ->
       [raw_reqs, result] = String.split(line, " => ")
-      {count, chemical} = parse_chemical.(result)
-      reqs = String.split(raw_reqs, ", ") |> Enum.map(&parse_chemical.(&1))
+      {count, chemical} = parse_chemical(result)
+      reqs = String.split(raw_reqs, ", ") |> Enum.map(&parse_chemical(&1))
       {chemical, {count, reqs}}
     end)
     |> Enum.into(%{})
+  end
+
+  def parse_chemical(chunk) do
+    [count, chemical] = String.split(chunk, " ")
+    {String.to_integer(count), chemical}
   end
 end
 
@@ -66,9 +108,11 @@ defmodule Day14Tests do
 
   for {test, i} <- data do
     [hd | lines] = String.split(test, "\n")
+    [one, two] = String.split(hd, ", ")
 
     def test(unquote(i)), do: unquote(Enum.join(lines, "\n"))
-    def answer(unquote(i)), do: unquote(String.to_integer(hd))
+    def answer(unquote(i)), do: unquote(String.to_integer(one))
+    def answer2(unquote(i)), do: unquote(String.to_integer(two))
   end
 
   def num_tests(), do: unquote(length(data))
