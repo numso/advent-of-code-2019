@@ -42,6 +42,8 @@ defmodule IntCode do
 
         receive do
           {:input, num} -> run(pid, Map.put(program, List.first(outputs), num), next, rpointer)
+        after
+          1 -> run(pid, Map.put(program, List.first(outputs), -1), next, rpointer)
         end
 
       :halt ->
