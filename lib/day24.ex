@@ -27,6 +27,32 @@ defmodule Day24 do
     parse(input) |> find_dup(MapSet.new()) |> bio_rating()
   end
 
+  @doc """
+  iex> Day24.part2(Day24.example, 10)
+  99
+
+  iex> Day24.part2()
+  ??
+  """
+  def part2(input \\ @input, minutes \\ 200) do
+    parse(input) |> tick(minutes) |> MapSet.size()
+  end
+
+  def tick(bugs, 0), do: bugs
+
+  # make sure "level" makes it into the coords
+  def tick(bugs, minutes) do
+    build_map(fn {x, y} = pos ->
+      num_adjacent =
+        get_adjacent_positions(x, y)
+        |> Enum.count(&MapSet.member?(bugs, &1))
+
+      is_bug = MapSet.member?(bugs, pos)
+      num_adjacent == 1 || (num_adjacent == 2 && !is_bug)
+    end)
+    |> tick(minutes - 1)
+  end
+
   def find_dup(bugs, cache) do
     new_bugs =
       build_map(fn {x, y} = pos ->
@@ -57,6 +83,7 @@ defmodule Day24 do
   end
 
   defp build_map(fun) do
+    # need a part2_build_map that accounts for level. loop from min_level - 1 to max_level + 1
     for(x <- 0..4, y <- 0..4, do: {x, y})
     |> Enum.reduce(MapSet.new(), fn pos, bugs ->
       if fun.(pos), do: MapSet.put(bugs, pos), else: bugs
