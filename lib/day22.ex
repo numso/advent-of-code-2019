@@ -3,41 +3,41 @@ defmodule Day22 do
   iex> Day22.part1()
   4684
   """
-  def part1(), do: Parser.read("input22.txt") |> deal(10007) |> Enum.find_index(&(&1 == 2019))
+  def part1() do
+    {m, o} = Parser.read("input22.txt") |> parse() |> reduce_instructions(10007)
+    rem(m * 2019 + o, 10007)
+  end
 
-  @doc ~S"""
-  iex> Day22.deal("deal with increment 7\ndeal into new stack\ndeal into new stack", 10)
-  [0, 3, 6, 9, 2, 5, 8, 1, 4, 7]
-
-  iex> Day22.deal("cut 6\ndeal with increment 7\ndeal into new stack", 10)
-  [3, 0, 7, 4, 1, 8, 5, 2, 9, 6]
-
-  iex> Day22.deal("deal with increment 7\ndeal with increment 9\ncut -2", 10)
-  [6, 3, 0, 7, 4, 1, 8, 5, 2, 9]
-
-  iex> Day22.deal("deal into new stack\ncut -2\ndeal with increment 7\ncut 8\ncut -4\ndeal with increment 7\ncut 3\ndeal with increment 9\ndeal with increment 3\ncut -1", 10)
-  [9, 2, 5, 8, 1, 4, 7, 0, 3, 6]
+  @doc """
+  iex> Day22.part2()
+  ??
   """
-  def deal(input, len) do
-    range = 0..(len - 1)
+  def part2() do
+    {m, o} = Parser.read("input22.txt") |> parse() |> reduce_instructions(119_315_717_514_047)
 
-    parse(input)
-    |> Enum.reduce(range, fn
-      :deal, cards ->
-        Enum.reverse(cards)
-
-      {:cut, num}, cards ->
-        {first, last} = Enum.split(cards, num)
-        last ++ first
-
-      {:inc, num}, cards ->
-        Enum.reduce(cards, {0, []}, fn card, {i, cards} ->
-          {rem(i + num, len), [{i, card} | cards]}
-        end)
-        |> elem(1)
-        |> Enum.sort()
-        |> Enum.map(fn {_, card} -> card end)
+    Enum.reduce(1..101_741_582_076_661, 2020, fn i, acc ->
+      if acc == 2020, do: IO.puts("YAY: #{i}")
+      if rem(i, 100_000_000) == 0, do: IO.puts(i)
+      rem(m * acc + o, 119_315_717_514_047)
     end)
+  end
+
+  def reduce_instructions(instructions, len) do
+    multiplier =
+      Enum.map(instructions, fn
+        {:inc, num} -> num
+        _ -> 1
+      end)
+      |> Enum.reduce(1, &(&1 * &2))
+
+    {_, offset} =
+      Enum.reduce(instructions, {-1, 0}, fn
+        {:cut, num}, {sign, total} -> {sign, sign * num + total}
+        {:inc, num}, {sign, total} -> {sign, total * num}
+        :deal, {sign, total} -> {sign * -1, total + sign * (len - 1)}
+      end)
+
+    {multiplier, offset}
   end
 
   def parse(input) do
