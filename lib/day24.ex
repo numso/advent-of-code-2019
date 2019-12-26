@@ -62,4 +62,74 @@ defmodule Day24 do
       if fun.(pos), do: MapSet.put(bugs, pos), else: bugs
     end)
   end
+
+  @doc """
+  iex> Day24.part2(Day24.example, 10)
+  99
+
+  iex> Day24.part2()
+  1916
+  """
+  def part2(input \\ @input, minutes \\ 200) do
+    parse(input) |> add_levels() |> tick(minutes) |> MapSet.size()
+  end
+
+  def add_levels(positions), do: Enum.map(positions, fn {x, y} -> {0, x, y} end) |> MapSet.new()
+
+  def tick(bugs, 0), do: bugs
+
+  def tick(bugs, minutes) do
+    sorted = Enum.sort(bugs)
+    {min, _, _} = List.first(sorted)
+    {max, _, _} = List.last(sorted)
+
+    build_map_2((min - 1)..(max + 1), fn
+      {_, 2, 2} ->
+        false
+
+      {l, x, y} = pos ->
+        num_adjacent =
+          get_adjacent_positions(l, x, y)
+          |> Enum.count(&MapSet.member?(bugs, &1))
+
+        is_bug = MapSet.member?(bugs, pos)
+        num_adjacent == 1 || (num_adjacent == 2 && !is_bug)
+    end)
+    |> tick(minutes - 1)
+  end
+
+  def get_adjacent_positions(l, x, y) do
+    [{l, x - 1, y}, {l, x + 1, y}, {l, x, y - 1}, {l, x, y + 1}]
+    |> Enum.flat_map(fn
+      {l, 2, 2} ->
+        case {x, y} do
+          {1, _} -> for a <- 0..4, do: {l + 1, 0, a}
+          {3, _} -> for a <- 0..4, do: {l + 1, 4, a}
+          {_, 1} -> for a <- 0..4, do: {l + 1, a, 0}
+          {_, 3} -> for a <- 0..4, do: {l + 1, a, 4}
+        end
+
+      {l, -1, _} ->
+        [{l - 1, 1, 2}]
+
+      {l, 5, _} ->
+        [{l - 1, 3, 2}]
+
+      {l, _, -1} ->
+        [{l - 1, 2, 1}]
+
+      {l, _, 5} ->
+        [{l - 1, 2, 3}]
+
+      pos ->
+        [pos]
+    end)
+  end
+
+  defp build_map_2(levels, fun) do
+    for(l <- levels, x <- 0..4, y <- 0..4, do: {l, x, y})
+    |> Enum.reduce(MapSet.new(), fn pos, bugs ->
+      if fun.(pos), do: MapSet.put(bugs, pos), else: bugs
+    end)
+  end
 end
